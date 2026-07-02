@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CODEWORKS HQ — 3D IT Learning World v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080d1a;
+  --surface-1:#0f1829;
+  --surface-2:#1a2540;
+  --surface-3:#243050;
+  --blue:#0ea5e9;
+  --blue-dim:#0369a1;
+  --blue-glow:rgba(14,165,233,0.25);
+  --green:#10b981;
+  --green-glow:rgba(16,185,129,0.25);
+  --orange:#f97316;
+  --orange-glow:rgba(249,115,22,0.25);
+  --purple:#a855f7;
+  --white:#f1f5f9;
+  --text-mid:#94a3b8;
+  --text-faint:#475569;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',sans-serif;
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:var(--sans);color:var(--white)}
+canvas#c{position:fixed;top:0;left:0;width:100%;height:100%;display:block;cursor:crosshair}
+
+/* ─── LOADING ─── */
+#loading{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;z-index:9999;transition:opacity .6s ease
+}
+.loading-logo{font-size:42px;font-weight:900;letter-spacing:-3px;color:var(--white)}
+.loading-logo em{color:var(--blue);font-style:normal}
+.loading-sub{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--text-mid)}
+.loading-bar-wrap{width:240px;height:2px;background:var(--surface-3);border-radius:2px;overflow:hidden}
+.loading-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--green),var(--orange));width:0%;transition:width .3s ease;border-radius:2px}
+.loading-hint{font-size:11px;color:var(--text-faint);font-family:var(--mono);min-height:16px}
+
+/* ─── TOPBAR ─── */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:54px;z-index:100;
+  background:rgba(8,13,26,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;padding:0 18px;gap:8px;
+}
+#logo{font-weight:900;font-size:16px;letter-spacing:-1px;color:var(--white);margin-right:auto;display:flex;align-items:center;gap:8px;user-select:none;cursor:pointer}
+#logo em{color:var(--blue);font-style:normal}
+.logo-live{width:7px;height:7px;border-radius:50%;background:var(--green);animation:livepulse 2.4s ease infinite;flex-shrink:0}
+@keyframes livepulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.6)}60%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
+
+.npill{
+  background:transparent;border:1.5px solid rgba(255,255,255,0.1);color:var(--text-mid);
+  padding:5px 14px;border-radius:100px;font-size:11.5px;font-weight:600;cursor:pointer;
+  transition:all .2s var(--ease-out);font-family:var(--sans);white-space:nowrap;
+}
+.npill:hover{border-color:rgba(255,255,255,0.25);color:var(--white);background:rgba(255,255,255,0.05)}
+.npill.active{border-color:var(--blue);background:rgba(14,165,233,0.15);color:var(--blue)}
+.npill.prog-active{border-color:var(--blue);background:rgba(14,165,233,0.15);color:var(--blue)}
+.npill.sys-active{border-color:var(--green);background:rgba(16,185,129,0.15);color:var(--green)}
+.npill.algo-active{border-color:var(--orange);background:rgba(249,115,22,0.15);color:var(--orange)}
+
+/* ─── FLOOR INDICATOR ─── */
+#floor-tag{
+  position:fixed;top:70px;right:18px;z-index:100;
+  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  font-family:var(--mono);color:var(--blue);
+  background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);
+  border-radius:100px;padding:5px 14px;
+  transition:all .3s ease;
+}
+
+/* ─── DIFFICULTY SWITCHER ─── */
+#diff-wrap{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:100;
+  display:flex;gap:3px;background:var(--surface-1);
+  border:1px solid rgba(255,255,255,0.08);border-radius:100px;padding:3px;
+}
+.dbtn{
+  padding:5px 13px;border-radius:100px;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  cursor:pointer;border:none;background:transparent;color:var(--text-mid);transition:all .2s ease;font-family:var(--sans);
+}
+.dbtn.active{background:var(--blue);color:#fff}
+
+/* ─── CROSSHAIR / HOVER TOOLTIP ─── */
+#tooltip{
+  position:fixed;z-index:200;pointer-events:none;
+  background:var(--surface-2);border:1px solid rgba(255,255,255,0.1);
+  border-radius:10px;padding:8px 14px;
+  font-size:11.5px;font-weight:600;color:var(--white);
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  opacity:0;transform:translateY(6px);transition:opacity .15s ease,transform .15s ease;
+  white-space:nowrap;
+}
+#tooltip.show{opacity:1;transform:translateY(0)}
+#tooltip-tag{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:2px}
+
+/* ─── INFO PANEL ─── */
+#panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(10,16,30,0.97);backdrop-filter:blur(24px);
+  border-top:1px solid rgba(255,255,255,0.08);
+  border-radius:20px 20px 0 0;
+  padding:28px 28px 36px;
+  transform:translateY(105%);transition:transform .45s var(--ease-out);
+  box-shadow:0 -20px 60px rgba(0,0,0,0.6);
+  display:grid;grid-template-columns:1fr 1fr;gap:28px;
+}
+@media(max-width:700px){#panel{grid-template-columns:1fr}}
+#panel.show{transform:translateY(0)}
+#panel-left{}
+#panel-eyebrow{font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--blue);margin-bottom:7px;font-family:var(--mono)}
+#panel-title{font-size:24px;font-weight:800;color:var(--white);margin-bottom:10px;line-height:1.15}
+#panel-body{font-size:13.5px;color:var(--text-mid);line-height:1.65;margin-bottom:12px}
+.panel-tag{display:inline-block;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.25);color:var(--blue);
+  font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:6px;padding:3px 9px;margin:2px 2px 0 0}
+#panel-right{}
+#panel-code-label{font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);font-family:var(--mono);margin-bottom:6px}
+#panel-code{
+  background:#040810;border:1px solid rgba(255,255,255,0.07);border-radius:12px;
+  padding:18px;font-family:var(--mono);font-size:12px;color:#a5f3fc;
+  line-height:1.65;overflow-x:auto;white-space:pre;max-height:180px;overflow-y:auto;
+}
+#panel-code .kw{color:#c084fc}
+#panel-code .fn{color:#34d399}
+#panel-code .str{color:#fbbf24}
+#panel-close{
+  position:absolute;right:22px;top:22px;width:30px;height:30px;
+  background:var(--surface-3);border:none;border-radius:50%;color:var(--text-mid);
+  cursor:pointer;font-size:13px;transition:all .2s;
+}
+#panel-close:hover{background:var(--surface-2);color:var(--white)}
+
+/* ─── FLOOR CONTENT PANELS (3D overlay UIs) ─── */
+.floor-ui{
+  position:fixed;top:50%;left:20px;transform:translateY(-50%);z-index:50;
+  width:240px;pointer-events:all;
+  opacity:0;pointer-events:none;transition:opacity .4s ease;
+}
+.floor-ui.visible{opacity:1;pointer-events:all}
+.fui-card{
+  background:rgba(10,16,30,0.9);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.08);border-radius:14px;
+  padding:16px;margin-bottom:8px;
+}
+.fui-label{font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);font-family:var(--mono);margin-bottom:8px}
+.fui-title{font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px}
+.fui-desc{font-size:11.5px;color:var(--text-mid);line-height:1.5}
+.sim-btn{
+  width:100%;margin-top:10px;padding:8px;border-radius:10px;border:none;
+  background:rgba(14,165,233,0.2);color:var(--blue);font-size:11.5px;font-weight:700;
+  cursor:pointer;transition:all .2s;font-family:var(--sans);letter-spacing:.5px;text-transform:uppercase;
+}
+.sim-btn:hover{background:rgba(14,165,233,0.35)}
+.sim-btn.green{background:rgba(16,185,129,0.2);color:var(--green)}
+.sim-btn.green:hover{background:rgba(16,185,129,0.35)}
+.sim-btn.orange{background:rgba(249,115,22,0.2);color:var(--orange)}
+.sim-btn.orange:hover{background:rgba(249,115,22,0.35)}
+
+/* Sort visualizer */
+#sort-viz{
+  display:flex;align-items:flex-end;gap:3px;height:60px;
+  padding:4px;background:rgba(0,0,0,0.3);border-radius:8px;margin-top:8px;
+}
+.sort-bar{flex:1;border-radius:3px 3px 0 0;background:var(--orange);transition:height .25s ease,background .25s ease;min-height:3px}
+
+/* Request flow */
+#req-flow{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.req-step{
+  display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;
+  background:rgba(0,0,0,0.3);font-size:10.5px;font-weight:600;color:var(--text-mid);
+  transition:all .3s ease;border:1px solid transparent;
+}
+.req-step.active{background:rgba(16,185,129,0.15);color:var(--green);border-color:rgba(16,185,129,0.25)}
+.req-step .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* OOP tree */
+#oop-tree{margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--text-mid);line-height:1.7}
+.oop-node{padding:3px 8px;border-radius:6px;margin-bottom:2px;border-left:2px solid var(--blue);padding-left:10px;transition:all .3s ease}
+.oop-node.highlight{background:rgba(14,165,233,0.15);color:var(--blue)}
+
+/* ─── CHATBOT ─── */
+#chatbot{
+  position:fixed;right:18px;bottom:18px;width:290px;z-index:150;
+  background:var(--surface-1);border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.5);
+  transition:all .3s var(--ease-out);
+}
+#chat-header{
+  background:linear-gradient(135deg,#1d4ed8 0%,var(--purple) 100%);
+  padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;
+  user-select:none;
+}
+.cav{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.cinfo{flex:1;min-width:0}.cname{font-size:12px;font-weight:700;color:#fff}.cstatus{font-size:10px;color:rgba(255,255,255,0.7)}
+.ctoggle-icon{color:rgba(255,255,255,0.7);font-size:14px;transition:transform .3s ease}
+#chatbot.open .ctoggle-icon{transform:rotate(180deg)}
+#chat-body{display:none;flex-direction:column}
+#chatbot.open #chat-body{display:flex}
+#chat-msgs{
+  max-height:200px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:7px;
+  background:rgba(4,8,16,0.8);
+}
+#chat-msgs::-webkit-scrollbar{width:3px}
+#chat-msgs::-webkit-scrollbar-track{background:transparent}
+#chat-msgs::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:2px}
+.cmsg{padding:8px 12px;border-radius:12px;font-size:11.5px;line-height:1.55;max-width:95%;word-break:break-word}
+.cmsg.ai{background:var(--surface-2);color:var(--white)}
+.cmsg.user{background:rgba(14,165,233,0.2);color:var(--blue);align-self:flex-end}
+.cmsg.typing{background:var(--surface-2)}
+.typing-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--text-mid);animation:tdot 1.2s ease infinite;margin:0 1px}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+#chat-input-area{display:flex;padding:8px;gap:6px;background:var(--surface-1);border-top:1px solid rgba(255,255,255,0.07)}
+#chat-input{
+  flex:1;background:rgba(4,8,16,0.8);border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px;color:var(--white);padding:7px 13px;font-size:11.5px;
+  outline:none;font-family:var(--sans);transition:border-color .2s ease;
+}
+#chat-input:focus{border-color:rgba(14,165,233,0.4)}
+#chat-send{
+  background:var(--blue);border:none;color:#fff;border-radius:20px;
+  padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;
+  font-family:var(--sans);transition:all .2s;white-space:nowrap;
+}
+#chat-send:hover{background:#38bdf8}
+#chat-send:disabled{opacity:.5;cursor:not-allowed}
+
+/* ─── MINIMAP ─── */
+#minimap{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:100;
+  background:rgba(10,16,30,0.85);border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:12px;
+  backdrop-filter:blur(12px);
+}
+.mfloor{
+  display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+  padding:4px 8px;border-radius:8px;transition:all .2s ease;
+}
+.mfloor:hover{background:rgba(255,255,255,0.05)}
+.mfloor.active .mf-dot{transform:scale(1.4)}
+.mf-dot{width:8px;height:8px;border-radius:50%;transition:all .2s ease}
+.mf-label{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-faint);font-family:var(--mono)}
+.mfloor.active .mf-label{color:var(--white)}
+.mmap-div{width:1px;height:20px;background:rgba(255,255,255,0.1)}
+
+/* ─── PROGRESS XP ─── */
+#xp-bar{
+  position:fixed;top:62px;left:18px;z-index:100;
+  display:flex;align-items:center;gap:8px;
+}
+.xp-label{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);font-family:var(--mono)}
+.xp-track{width:100px;height:4px;background:var(--surface-3);border-radius:2px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:2px;width:0%;transition:width .8s var(--ease-spring)}
+.xp-points{font-size:9.5px;font-weight:700;color:var(--blue);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loading">
+  <div class="loading-logo">CODE<em>WORKS</em></div>
+  <div class="loading-sub">3D IT Learning Universe</div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="lbar"></div></div>
+  <div class="loading-hint" id="lhint">Initializing engine cores…</div>
+</div>
+
+<canvas id="c"></canvas>
+
+<!-- TOOLTIP -->
+<div id="tooltip">
+  <div id="tooltip-tag">INTERACTIVE NODE</div>
+  <div id="tooltip-name">Object</div>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div id="logo" onclick="goFloor('lobby')"><div class="logo-live"></div>CODE<em>WORKS</em> HQ</div>
+  <button class="npill active" id="btn-lobby" onclick="goFloor('lobby')">🏛 Lobby</button>
+  <button class="npill" id="btn-prog" onclick="goFloor('prog')">⚙️ Programming</button>
+  <button class="npill" id="btn-sys" onclick="goFloor('sys')">🌐 Systems</button>
+  <button class="npill" id="btn-algo" onclick="goFloor('algo')">🧠 AlgDat</button>
+</div>
+<div id="floor-tag">LOBBY HUB</div>
+
+<!-- XP BAR -->
+<div id="xp-bar">
+  <div class="xp-label">XP</div>
+  <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+  <div class="xp-points" id="xp-pts">0</div>
+</div>
+
+<!-- DIFFICULTY -->
+<div id="diff-wrap">
+  <button class="dbtn active" onclick="setDiff(this,'beginner')">Beginner</button>
+  <button class="dbtn" onclick="setDiff(this,'intermediate')">Intermediate</button>
+  <button class="dbtn" onclick="setDiff(this,'advanced')">Advanced</button>
+</div>
+
+<!-- MINIMAP -->
+<div id="minimap">
+  <div class="mfloor active" id="mm-lobby" onclick="goFloor('lobby')">
+    <div class="mf-dot" style="background:var(--blue)"></div>
+    <div class="mf-label">Lobby</div>
+  </div>
+  <div class="mmap-div"></div>
+  <div class="mfloor" id="mm-prog" onclick="goFloor('prog')">
+    <div class="mf-dot" style="background:var(--blue)"></div>
+    <div class="mf-label">F1</div>
+  </div>
+  <div class="mmap-div"></div>
+  <div class="mfloor" id="mm-sys" onclick="goFloor('sys')">
+    <div class="mf-dot" style="background:var(--green)"></div>
+    <div class="mf-label">F2</div>
+  </div>
+  <div class="mmap-div"></div>
+  <div class="mfloor" id="mm-algo" onclick="goFloor('algo')">
+    <div class="mf-dot" style="background:var(--orange)"></div>
+    <div class="mf-label">F3</div>
+  </div>
+</div>
+
+<!-- FLOOR SIDE UIs -->
+<!-- Programming Floor UI -->
+<div class="floor-ui" id="fui-prog">
+  <div class="fui-card">
+    <div class="fui-label">OOP Inheritance Tree</div>
+    <div id="oop-tree">
+      <div class="oop-node" id="oopA">Animal (base class)</div>
+      <div class="oop-node" style="margin-left:12px;border-color:var(--green)" id="oopB">├─ Mammal extends Animal</div>
+      <div class="oop-node" style="margin-left:24px;border-color:var(--orange)" id="oopC">│  └─ Dog extends Mammal</div>
+      <div class="oop-node" style="margin-left:12px;border-color:var(--purple)" id="oopD">└─ Bird extends Animal</div>
+    </div>
+    <button class="sim-btn" onclick="animateOOP()">▶ Animate Inheritance</button>
+  </div>
+  <div class="fui-card">
+    <div class="fui-label">Active Robot State</div>
+    <div class="fui-desc" id="robot-state">Click a robot to inspect its class structure and methods.</div>
+  </div>
+</div>
+
+<!-- Systems Floor UI -->
+<div class="floor-ui" id="fui-sys">
+  <div class="fui-card">
+    <div class="fui-label">Request Lifecycle</div>
+    <div id="req-flow">
+      <div class="req-step" id="rs-client"><div class="dot"></div>Client Request</div>
+      <div class="req-step" id="rs-gateway"><div class="dot"></div>API Gateway</div>
+      <div class="req-step" id="rs-service"><div class="dot"></div>Microservice</div>
+      <div class="req-step" id="rs-db"><div class="dot"></div>Database Query</div>
+      <div class="req-step" id="rs-resp"><div class="dot"></div>Response → Client</div>
+    </div>
+    <button class="sim-btn green" onclick="animateRequest()">▶ Send Request</button>
+  </div>
+</div>
+
+<!-- AlgDat Floor UI -->
+<div class="floor-ui" id="fui-algo">
+  <div class="fui-card">
+    <div class="fui-label">Sorting Visualizer</div>
+    <div id="sort-viz"></div>
+    <div style="display:flex;gap:4px;margin-top:8px">
+      <button class="sim-btn orange" style="font-size:9.5px" onclick="runSort('bubble')">Bubble</button>
+      <button class="sim-btn orange" style="font-size:9.5px" onclick="runSort('selection')">Select</button>
+      <button class="sim-btn orange" style="font-size:9.5px" onclick="runSort('quick')">Quick</button>
+    </div>
+  </div>
+  <div class="fui-card">
+    <div class="fui-label">Data Structure Inspector</div>
+    <div class="fui-desc" id="ds-state">Click a data structure node to inspect memory layout.</div>
+  </div>
+</div>
+
+<!-- INFO PANEL -->
+<div id="panel">
+  <button id="panel-close" onclick="closePanel()">✕</button>
+  <div id="panel-left">
+    <div id="panel-eyebrow">MODULE ANALYSIS</div>
+    <div id="panel-title">System Node</div>
+    <div id="panel-body">Select an interactive node in the 3D environment to begin analysis.</div>
+    <div id="panel-tags"></div>
+  </div>
+  <div id="panel-right">
+    <div id="panel-code-label">// Code Pattern</div>
+    <pre id="panel-code"></pre>
+  </div>
+</div>
+
+<!-- CHATBOT -->
+<div id="chatbot">
+  <div id="chat-header" onclick="toggleChat()">
+    <div class="cav">🤖</div>
+    <div class="cinfo">
+      <div class="cname">ARIA — Core AI</div>
+      <div class="cstatus">Systems Operational · AI-Powered</div>
+    </div>
+    <div class="ctoggle-icon">▾</div>
+  </div>
+  <div id="chat-body">
+    <div id="chat-msgs">
+      <div class="cmsg ai">Welcome, Explorer. I'm ARIA, your AI learning assistant. I can explain any concept in this world. Click objects to analyze them, or ask me anything!</div>
+    </div>
+    <div id="chat-input-area">
+      <input id="chat-input" placeholder="Ask about any CS concept…" onkeydown="if(event.key==='Enter')sendChat()">
+      <button id="chat-send" onclick="sendChat()">Ask</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════
+//  KNOWLEDGE DATABASE
+// ══════════════════════════════════════════════════════════════
+const KB = {
+  hologram: {
+    eyebrow:"CODEWORKS GATEWAY", title:"HQ Central Command",
+    tags:["System Hub","API Layer","Navigation Core"],
+    beginner:"Welcome! This is the main lobby of CODEWORKS HQ — a futuristic learning universe. Three floors await you, each dedicated to a core CS discipline. Click the portal rings to enter each floor.",
+    intermediate:"The lobby represents an API Gateway pattern: a single entry point routing requests to three distinct service domains — the Programming Lab, Systems Architecture Hub, and Algorithm Arena.",
+    advanced:"The lobby architecturally mirrors a service mesh entry layer. Portal nodes act as service discovery endpoints, each encapsulating independent bounded contexts with separate data schemas and runtime environments.",
+    code:`const hq = new CodeWorksHQ({
+  floors: [
+    { id: 'prog', domain: 'OOP & Core Logic' },
+    { id: 'sys',  domain: 'Distributed Systems' },
+    { id: 'algo', domain: 'Algorithms & DS' }
+  ],
+  gateway: true
+});`
+  },
+  portal_prog: {
+    eyebrow:"FLOOR 1 · PROGRAMMING LAB", title:"Robot Factory — OOP Engines",
+    tags:["OOP","Classes","Polymorphism","Functions"],
+    beginner:"The Programming Lab shows code as a robot factory. Each robot IS an object — with properties (data) and methods (actions). Creating a new robot means instantiating a class.",
+    intermediate:"Explore polymorphic dispatch, encapsulation patterns, and the factory design pattern. Robots demonstrate how class hierarchies produce extensible, maintainable code architectures.",
+    advanced:"Analyze SOLID principle compliance: Single Responsibility per robot module, Open/Closed via abstract base classes, Liskov substitution across inheritance chains, Interface segregation, and Dependency inversion via constructor injection.",
+    code:`class Robot extends Entity {
+  constructor(id, type) {
+    super(id);
+    this.type = type;
+    this.state = 'IDLE';
+  }
+  execute(task) {
+    return this.modules
+      .filter(m => m.handles(task))
+      .reduce((acc, m) => m.run(acc), null);
+  }
+}`
+  },
+  portal_sys: {
+    eyebrow:"FLOOR 2 · SYSTEMS ARCHITECTURE", title:"Digital City — Distributed Infrastructure",
+    tags:["Microservices","APIs","Databases","Load Balancing"],
+    beginner:"Floor 2 is a digital city where each building is a part of a software system. The tall tower is the backend server. The glowing grid is the database. The bridges are APIs connecting everything.",
+    intermediate:"Trace a full request lifecycle: client → API gateway → load balancer → microservice cluster → ORM → database → cache → response. Each architectural component has distinct responsibilities and failure modes.",
+    advanced:"Evaluate CAP theorem trade-offs across the system topology. Identify eventual consistency windows in the distributed cache layer, and analyze the latency impact of synchronous vs async service communication patterns.",
+    code:`// Request Pipeline
+app.use('/api', rateLimit({ max: 100 }));
+router.post('/data', [
+  authenticate,
+  validate(schema),
+  cache.middleware,
+  async (req, res) => {
+    const result = await service.process(req.body);
+    await cache.set(req.cacheKey, result);
+    res.json({ data: result, latency: Date.now() });
+  }
+]);`
+  },
+  portal_algo: {
+    eyebrow:"FLOOR 3 · ALGORITHM ARENA", title:"Holographic Sort & Search Engine",
+    tags:["Big-O","Sorting","Graphs","Data Structures"],
+    beginner:"Floor 3 turns algorithms into physical machines you can watch! Sorting algorithms are conveyor belts that rearrange boxes. Graph algorithms send light pulses through a city of connected nodes.",
+    intermediate:"Compare sorting algorithm complexities: Bubble O(n²) vs Merge O(n log n) vs Quick O(n log n) average. Observe how data structure choice (array vs linked list vs tree) impacts traversal and search times.",
+    advanced:"Analyze amortized complexity in dynamic array resizing, cache locality effects in sequential vs pointer-based traversal, and the space-time tradeoff in memoized dynamic programming over recursive trees.",
+    code:`// Quicksort implementation
+function quicksort(arr, lo = 0, hi = arr.length - 1) {
+  if (lo >= hi) return arr;
+  const pivot = partition(arr, lo, hi);
+  quicksort(arr, lo, pivot - 1);
+  quicksort(arr, pivot + 1, hi);
+  return arr;
+}
+// Average: O(n log n) | Worst: O(n²)`
+  },
+  robot_A: {
+    eyebrow:"ROBOT UNIT · CLASS INSTANCE", title:"VariableBot — Data Container",
+    tags:["Variables","Memory","Types","Scope"],
+    beginner:"VariableBot stores one piece of information — like a labeled box. It has a name (label), a value (what's inside), and a type (what kind of thing fits). When the box is destroyed, the value is gone.",
+    intermediate:"VariableBot represents stack-allocated primitives. Its scope chain determines accessibility. Closure captures create heap references, preventing GC collection even after the enclosing function returns.",
+    advanced:"Analyze memory layout: stack frame allocation for primitives vs heap allocation for reference types. Understand escape analysis, where the JIT decides whether to promote stack allocations to heap.",
+    code:`// Variable lifecycle
+let x = 42;           // stack allocated int
+const name = "Bot";   // interned string ref
+let obj = { v: 1 };   // heap allocated object
+
+function scope() {
+  let local = x;      // new stack binding
+  return () => local; // closure captures heap ref
+}`
+  },
+  robot_B: {
+    eyebrow:"ROBOT UNIT · CLASS INSTANCE", title:"FunctionBot — Logic Executor",
+    tags:["Functions","Return Values","Parameters","Recursion"],
+    beginner:"FunctionBot takes inputs, does work, and gives back an output — like a machine in a factory. You feed it ingredients (parameters), it processes them, and returns the result.",
+    intermediate:"Functions are first-class values. Higher-order functions take or return functions, enabling composable logic pipelines. Understand call stack mechanics, tail-call optimization, and closure scoping.",
+    advanced:"Analyze lambda calculus foundations, currying and partial application, functor/monad abstractions, and the distinction between pure functions (referentially transparent) and impure functions with side effects.",
+    code:`// First-class & higher-order
+const double = x => x * 2;
+const pipe = (...fns) => x => fns.reduce((v, f) => f(v), x);
+
+const process = pipe(
+  double,
+  x => x + 1,
+  x => x ** 2
+);
+console.log(process(3)); // ((3*2)+1)^2 = 49`
+  },
+  robot_C: {
+    eyebrow:"ROBOT UNIT · CLASS INSTANCE", title:"ClassBot — Blueprint Engine",
+    tags:["Classes","OOP","Constructor","Methods"],
+    beginner:"ClassBot is the blueprint all other robots are built from. Think of it like a cookie cutter — the class is the cutter, each robot (object) is a cookie. All cookies share the same shape.",
+    intermediate:"Classes define constructor logic, prototype chains, and method resolution order. Static methods belong to the class itself. Instance methods share via prototype, not per-instance copies.",
+    advanced:"Understand the prototype chain, [[Prototype]] internal slot, hasOwnProperty vs inherited property lookup, mixin composition patterns, and the performance implications of dynamic property addition post-construction.",
+    code:`class Bot {
+  #secret = 42;          // private field
+  constructor(id) {
+    this.id = id;
+    this.state = 'INIT';
+  }
+  static create(id) { return new Bot(id); }
+  get info() { return \`Bot[\${this.id}]\`; }
+  async boot() { this.state = 'READY'; }
+}`
+  },
+  building_frontend: {
+    eyebrow:"CITY NODE · FRONTEND LAYER", title:"UI Tower — Client Interface",
+    tags:["React","DOM","Events","State Management"],
+    beginner:"The UI Tower is what users see and touch. It sends requests to the city's backend when you interact with it — like pressing a button sends a message through the city's communication lines.",
+    intermediate:"The frontend renders a virtual DOM diffed against real DOM. State management (Redux/Zustand) ensures predictable updates. HTTP requests are made via fetch/axios and responses update the view layer reactively.",
+    advanced:"Analyze reconciliation algorithms, fiber architecture in React 18, server components vs client components, hydration strategies (full, partial, selective), and the tradeoffs of SSR vs CSR vs ISR rendering paradigms.",
+    code:`// React state + API call
+const [data, setData] = useState(null);
+useEffect(() => {
+  fetch('/api/data')
+    .then(r => r.json())
+    .then(d => setData(d));
+}, []);
+
+return <Dashboard data={data} />;`
+  },
+  building_backend: {
+    eyebrow:"CITY NODE · BACKEND LAYER", title:"Core Server — Processing Engine",
+    tags:["Node.js","REST","Middleware","Business Logic"],
+    beginner:"The backend server receives requests from the frontend, processes them (checks data, runs calculations), and sends responses back. It's the brain of the city — making all decisions.",
+    intermediate:"RESTful architecture uses HTTP verbs semantically: GET (read), POST (create), PUT (replace), PATCH (update), DELETE (remove). Middleware chains process requests sequentially before reaching route handlers.",
+    advanced:"Evaluate the event loop mechanics in Node.js: call stack, callback queue, microtask queue, and libuv thread pool for I/O. Understand backpressure in streams and worker threads for CPU-intensive tasks.",
+    code:`// Express middleware chain
+const app = express();
+app.use(helmet());
+app.use(rateLimit({ windowMs: 15*60*1000, max: 100 }));
+app.use(async (req, res, next) => {
+  req.user = await auth.verify(req.headers.authorization);
+  next();
+});
+app.get('/api/data', cache('5m'), controller.getData);`
+  },
+  building_db: {
+    eyebrow:"CITY NODE · DATA LAYER", title:"Database Core — Persistence Engine",
+    tags:["SQL","Indexes","Transactions","ACID"],
+    beginner:"The database stores all the city's information permanently. Unlike RAM which forgets when power goes out, the database remembers everything — user accounts, posts, orders — forever.",
+    intermediate:"Relational databases use B-tree indexes to accelerate lookups from O(n) to O(log n). ACID transactions ensure Atomicity (all-or-nothing), Consistency, Isolation, and Durability across concurrent writes.",
+    advanced:"Analyze query execution plans: hash join vs nested loop vs merge join strategies. Understand MVCC (Multi-Version Concurrency Control) for snapshot isolation, WAL (Write-Ahead Log) for crash recovery, and vacuum/autovacuum mechanics.",
+    code:`-- Optimized query with index usage
+CREATE INDEX CONCURRENTLY idx_users_email
+  ON users(email) WHERE deleted_at IS NULL;
+
+EXPLAIN ANALYZE
+SELECT u.id, COUNT(o.id) as orders
+FROM users u
+LEFT JOIN orders o ON o.user_id = u.id
+WHERE u.active = true
+GROUP BY u.id
+HAVING COUNT(o.id) > 5;`
+  },
+  algo_sort: {
+    eyebrow:"ALGORITHM NODE · SORTING ENGINE", title:"Sorting Machine — Comparison Algorithms",
+    tags:["Bubble Sort","Quick Sort","O(n log n)","Comparisons"],
+    beginner:"Sorting algorithms put things in order! Imagine shuffled playing cards — a sorting algorithm is the method you use to arrange them from lowest to highest. Some methods are faster than others.",
+    intermediate:"Compare algorithm complexities: Bubble Sort O(n²) makes n² comparisons. Merge Sort O(n log n) divides and conquers. Quick Sort averages O(n log n) but degrades to O(n²) on already-sorted data with naive pivot selection.",
+    advanced:"Analyze introsort (std::sort): hybrid of quicksort + heapsort + insertion sort. Understand cache-oblivious algorithms, branch prediction effects on comparison-based sorts, and why radix sort O(nk) can beat comparison-based lower bound Ω(n log n).",
+    code:`// Merge Sort implementation
+function mergeSort(arr) {
+  if (arr.length <= 1) return arr;
+  const mid = Math.floor(arr.length / 2);
+  const L = mergeSort(arr.slice(0, mid));
+  const R = mergeSort(arr.slice(mid));
+  return merge(L, R);
+}
+// Time: O(n log n) | Space: O(n)`
+  },
+  algo_graph: {
+    eyebrow:"ALGORITHM NODE · GRAPH ENGINE", title:"Graph City — Pathfinding Arena",
+    tags:["Dijkstra","A*","BFS","DFS","Weighted Graphs"],
+    beginner:"Graph algorithms find the best path between two points — like GPS navigation! The buildings are nodes, roads are edges, and the algorithm finds the fastest route.",
+    intermediate:"Dijkstra's algorithm finds shortest paths in weighted graphs using a min-heap priority queue, O((V+E) log V). BFS finds shortest paths in unweighted graphs O(V+E). A* adds a heuristic to Dijkstra for faster goal-directed search.",
+    advanced:"Analyze Bellman-Ford for negative-weight edges O(VE), Floyd-Warshall for all-pairs shortest paths O(V³). Understand how admissible and consistent heuristics affect A* optimality and completeness in continuous state spaces.",
+    code:`// Dijkstra with min-heap
+function dijkstra(graph, src) {
+  const dist = new Map();
+  const pq = new MinHeap([[0, src]]);
+  while (!pq.empty()) {
+    const [d, u] = pq.pop();
+    if (dist.has(u)) continue;
+    dist.set(u, d);
+    for (const [v, w] of graph[u]) {
+      if (!dist.has(v)) pq.push([d+w, v]);
+    }
+  }
+  return dist;
+}`
+  },
+  algo_stack: {
+    eyebrow:"DATA STRUCTURE · LIFO TOWER", title:"Stack Tower — LIFO Memory",
+    tags:["Stack","LIFO","Push/Pop","Call Stack"],
+    beginner:"A stack works like a stack of plates — you can only add or remove from the top! Last item in is first item out (LIFO). Your browser's back button works like a stack of pages you visited.",
+    intermediate:"Stack operations push/pop are O(1). The call stack in program execution is a runtime stack: each function call pushes a frame, return pops it. Stack overflow occurs when recursion depth exceeds the stack size limit.",
+    advanced:"Understand stack frames: return address, local variables, saved registers, and frame pointer. Analyze tail-call optimization (TCO) which allows certain recursive calls to reuse the current frame, preventing stack growth.",
+    code:`class Stack {
+  #data = [];
+  push(v)  { this.#data.push(v); }
+  pop()    { return this.#data.pop(); }
+  peek()   { return this.#data.at(-1); }
+  isEmpty(){ return this.#data.length === 0; }
+  // All ops: O(1) time, O(n) space
+}
+// Used in: undo/redo, expression parsing, DFS`
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+//  ENGINE STATE
+// ══════════════════════════════════════════════════════════════
+let scene, camera, renderer, clock;
+let currentFloor = 'lobby';
+let difficulty = 'beginner';
+let chatOpen = false;
+let xp = 0, seenNodes = new Set();
+let sortRunning = false, reqRunning = false;
+
+// Scene objects organized by floor
+const floorObjects = { lobby:[], prog:[], sys:[], algo:[] };
+const interactable = [];
+
+// Camera lerp state
+const camState = {
+  cur: { x:0, y:7, z:18 },
+  tgt: { x:0, y:7, z:18 }
+};
+
+// Floor camera presets
+const CAM_PRESETS = {
+  lobby: { x:0, y:7, z:18 },
+  prog:  { x:-10, y:6, z:14 },
+  sys:   { x:0, y:8, z:14 },
+  algo:  { x:10, y:6, z:14 }
+};
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+function init() {
+  const canvas = document.getElementById('c');
+  clock = new THREE.Clock();
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x080d1a);
+  scene.fog = new THREE.FogExp2(0x080d1a, 0.025);
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 600);
+  camera.position.set(0, 7, 18);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // Lighting
+  const ambient = new THREE.AmbientLight(0x1a2a4a, 1.5);
+  scene.add(ambient);
+  const hemi = new THREE.HemisphereLight(0x0ea5e9, 0x080d1a, 0.6);
+  scene.add(hemi);
+
+  // Directional
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(10, 20, 10);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 1024;
+  dirLight.shadow.mapSize.height = 1024;
+  scene.add(dirLight);
+
+  buildLobby();
+  buildProgFloor();
+  buildSysFloor();
+  buildAlgoFloor();
+
+  // Build sort bars
+  buildSortBars();
+
+  // Events
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('click', onSceneClick);
+  window.addEventListener('resize', onResize);
+
+  // Loading animation
+  simulateLoading();
+
+  animate();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LOADING
+// ══════════════════════════════════════════════════════════════
+function simulateLoading() {
+  const bar = document.getElementById('lbar');
+  const hint = document.getElementById('lhint');
+  const hints = [
+    'Initializing engine cores…',
+    'Calibrating 3D render pipeline…',
+    'Loading robot schemas…',
+    'Spawning city infrastructure…',
+    'Connecting algorithm arena…',
+    'Booting ARIA assistant…',
+    'Ready.'
+  ];
+  let pct = 0;
+  let hi = 0;
+  const iv = setInterval(() => {
+    pct += Math.random() * 22 + 8;
+    if (pct > 100) pct = 100;
+    bar.style.width = pct + '%';
+    hint.textContent = hints[Math.min(hi++, hints.length-1)];
+    if (pct >= 100) {
+      clearInterval(iv);
+      setTimeout(() => {
+        const el = document.getElementById('loading');
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 600);
+      }, 200);
+    }
+  }, 180);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════════
+function mat(color, emissive=0, rough=0.5, metal=0.2, wire=false) {
+  return new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity:0.4, roughness:rough, metalness:metal, wireframe:wire });
+}
+function box(w,h,d,col,emissive) {
+  const g = new THREE.BoxGeometry(w,h,d);
+  const m = mat(col, emissive||col);
+  return new THREE.Mesh(g, m);
+}
+function cylinder(rt,rb,h,segs,col,emissive) {
+  const g = new THREE.CylinderGeometry(rt,rb,h,segs);
+  const m = mat(col, emissive||col);
+  return new THREE.Mesh(g, m);
+}
+function sphere(r,ws,hs,col,emissive) {
+  const g = new THREE.SphereGeometry(r,ws,hs);
+  const m = mat(col, emissive||col);
+  return new THREE.Mesh(g, m);
+}
+function torus(r,tube,rs,ts,col,emissive) {
+  const g = new THREE.TorusGeometry(r,tube,rs,ts);
+  const m = mat(col, emissive||col);
+  return new THREE.Mesh(g, m);
+}
+function addToFloor(mesh, floor, id=null, interactive=true) {
+  floorObjects[floor].push(mesh);
+  scene.add(mesh);
+  if (id) { mesh.userData.id = id; mesh.userData.floor = floor; }
+  if (interactive && id) interactable.push(mesh);
+  return mesh;
+}
+function makeGrid(yPos, color) {
+  const size = 60, div = 30;
+  const geo = new THREE.PlaneGeometry(size, size, div, div);
+  const mat2 = new THREE.MeshBasicMaterial({ color, wireframe:true, transparent:true, opacity:0.15 });
+  const m = new THREE.Mesh(geo, mat2);
+  m.rotation.x = -Math.PI/2;
+  m.position.y = yPos;
+  return m;
+}
+function particles(count, spread, color, yOff=0) {
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  for (let i=0;i<count;i++) {
+    pos[i*3]   = (Math.random()-0.5)*spread;
+    pos[i*3+1] = Math.random()*spread*0.5 + yOff;
+    pos[i*3+2] = (Math.random()-0.5)*spread;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.PointsMaterial({ color, size:0.06, transparent:true, opacity:0.7 });
+  return new THREE.Points(geo, m);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LOBBY BUILD
+// ══════════════════════════════════════════════════════════════
+function buildLobby() {
+  // Floor platform
+  const floor = cylinder(12,12,0.4,64,0x1a2540,0x0f1829);
+  floor.position.y = -0.2;
+  floor.receiveShadow = true;
+  addToFloor(floor,'lobby');
+
+  // Grid
+  const grid = makeGrid(0.02, 0x0ea5e9);
+  addToFloor(grid,'lobby');
+
+  // Ambient particles
+  const pts = particles(200, 30, 0x0ea5e9, 0);
+  addToFloor(pts,'lobby');
+
+  // ── Central hologram
+  const holoGrp = new THREE.Group();
+  // Outer ring
+  const outerRing = torus(2,0.06,16,80,0x0ea5e9,0x0ea5e9);
+  outerRing.rotation.x = Math.PI/2;
+  holoGrp.add(outerRing);
+  // Inner icosahedron
+  const ico = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(1.1, 1),
+    new THREE.MeshStandardMaterial({ color:0x0ea5e9, wireframe:true, emissive:0x0ea5e9, emissiveIntensity:0.6 })
+  );
+  holoGrp.add(ico);
+  // Core sphere
+  const core = sphere(0.45, 16, 16, 0x38bdf8, 0x38bdf8);
+  holoGrp.add(core);
+  holoGrp.position.set(0, 3.5, 0);
+  holoGrp.userData.id = 'hologram';
+  holoGrp.userData.type = 'group';
+  holoGrp.traverse(c => { if (c.isMesh) { c.userData.id='hologram'; interactable.push(c); } });
+  floorObjects.lobby.push(holoGrp);
+  scene.add(holoGrp);
+
+  // Vertical beam
+  const beam = cylinder(0.05,0.3,3.5,8,0x0ea5e9,0x0ea5e9);
+  beam.position.set(0,1.8,0);
+  beam.material.transparent=true; beam.material.opacity=0.3;
+  addToFloor(beam,'lobby');
+
+  // Point light on hologram
+  const hl = new THREE.PointLight(0x0ea5e9, 2, 10);
+  hl.position.set(0,3.5,0);
+  scene.add(hl); floorObjects.lobby.push(hl);
+
+  // Portal rings
+  const portals = [
+    { id:'portal_prog', color:0x0ea5e9, pos:[-5.5, 1.8, -2], label:'Programming' },
+    { id:'portal_sys',  color:0x10b981, pos:[0,   1.8, -6], label:'Systems' },
+    { id:'portal_algo', color:0xf97316, pos:[5.5,  1.8, -2], label:'AlgDat' }
+  ];
+
+  portals.forEach(p => {
+    const grp = new THREE.Group();
+    // Outer ring
+    const ring = torus(1,0.1,16,80,p.color,p.color);
+    grp.add(ring);
+    // Inner ring
+    const inner = torus(0.6,0.04,12,60,p.color,p.color);
+    grp.add(inner);
+    // Center glow
+    const cGlow = sphere(0.2,12,12,p.color,p.color);
+    grp.add(cGlow);
+    // Ground disc
+    const disc = cylinder(1.2,1.2,0.06,32,p.color,p.color);
+    disc.position.y = -1.8;
+    disc.material.transparent=true; disc.material.opacity=0.25;
+    grp.add(disc);
+    // Point light
+    const pl = new THREE.PointLight(p.color, 1.5, 6);
+    grp.add(pl);
+
+    grp.position.set(...p.pos);
+    grp.userData.id = p.id;
+    grp.userData.type = 'group';
+    grp.traverse(c => { if (c.isMesh) { c.userData.id=p.id; interactable.push(c); } });
+    floorObjects.lobby.push(grp);
+    scene.add(grp);
+  });
+
+  // Column pillars
+  for (let i=0;i<8;i++) {
+    const a = (i/8)*Math.PI*2;
+    const col = cylinder(0.25,0.25,8,8,0x1a2540,0x0f1829);
+    col.position.set(Math.cos(a)*9.5, 4, Math.sin(a)*9.5);
+    col.castShadow=true; col.receiveShadow=true;
+    addToFloor(col,'lobby');
+    // Top light
+    const tl = new THREE.PointLight(0x0ea5e9,0.4,4);
+    tl.position.set(Math.cos(a)*9.5, 8.2, Math.sin(a)*9.5);
+    scene.add(tl); floorObjects.lobby.push(tl);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FLOOR 1: PROGRAMMING
+// ══════════════════════════════════════════════════════════════
+function buildProgFloor() {
+  const OX=-18, OZ=0;
+
+  // Platform
+  const plat = box(22,0.5,18, 0x0f1829, 0x1a2540);
+  plat.position.set(OX, -0.25, OZ);
+  plat.receiveShadow=true;
+  addToFloor(plat,'prog');
+
+  // Grid
+  const g = makeGrid(0.02, 0x0ea5e9);
+  g.position.set(OX,0,OZ);
+  addToFloor(g,'prog');
+
+  // Ambient particles
+  const pts = particles(150,18,0x0ea5e9,0);
+  pts.position.set(OX,0,OZ);
+  addToFloor(pts,'prog');
+
+  // Point light
+  const pl = new THREE.PointLight(0x0ea5e9,2,20);
+  pl.position.set(OX,8,OZ);
+  scene.add(pl); floorObjects.prog.push(pl);
+
+  // ── ROBOTS
+  const robotDefs = [
+    { id:'robot_A', color:0x0ea5e9, ecolor:0x38bdf8, pos:[OX-6, 0, OZ-3], label:'Variable', arms:true },
+    { id:'robot_B', color:0x10b981, ecolor:0x34d399, pos:[OX,   0, OZ-3], label:'Function', arms:false },
+    { id:'robot_C', color:0xa855f7, ecolor:0xc084fc, pos:[OX+6, 0, OZ-3], label:'Class', arms:true }
+  ];
+
+  robotDefs.forEach(rd => {
+    const grp = buildRobot(rd.color, rd.ecolor, rd.id, rd.arms);
+    grp.position.set(...rd.pos);
+    grp.userData.id = rd.id;
+    grp.traverse(c => { if (c.isMesh) { c.userData.id=rd.id; interactable.push(c); } });
+    floorObjects.prog.push(grp);
+    scene.add(grp);
+  });
+
+  // Assembly line belt
+  for (let i=0;i<10;i++) {
+    const seg = box(1.8,0.1,0.8, 0x1a2540, 0x0f1829);
+    seg.position.set(OX-8+i*1.8, 0.05, OZ+3);
+    addToFloor(seg,'prog');
+  }
+  // Belt items
+  for (let i=0;i<5;i++) {
+    const itm = box(0.5,0.5,0.5, 0x0ea5e9, 0x0ea5e9);
+    itm.position.set(OX-7+i*3.2, 0.4, OZ+3);
+    itm.userData.beltX = OX-7+i*3.2;
+    addToFloor(itm,'prog');
+  }
+
+  // Label towers (decorative columns)
+  [[OX-10,0,OZ-7],[OX+2,0,OZ-7],[OX-10,0,OZ+5],[OX+2,0,OZ+5]].forEach(p => {
+    const c = cylinder(0.18,0.18,5,8,0x1a2540,0x0f1829);
+    c.position.set(p[0],2.5,p[2]);
+    addToFloor(c,'prog');
+    const cap = sphere(0.25,8,8,0x0ea5e9,0x0ea5e9);
+    cap.position.set(p[0],5.1,p[2]);
+    addToFloor(cap,'prog');
+  });
+}
+
+function buildRobot(bodyColor, glowColor, id, hasArms) {
+  const grp = new THREE.Group();
+  // Body
+  const body = box(0.9,1.2,0.6, bodyColor, glowColor);
+  body.position.y = 1.5;
+  body.castShadow=true;
+  grp.add(body);
+  // Head
+  const head = box(0.65,0.65,0.55, bodyColor, glowColor);
+  head.position.y = 2.5;
+  grp.add(head);
+  // Eyes
+  const eyeL = sphere(0.1,6,6, 0xffffff, 0xffffff);
+  eyeL.position.set(-0.18,2.52,0.29);
+  grp.add(eyeL);
+  const eyeR = sphere(0.1,6,6, 0xffffff, 0xffffff);
+  eyeR.position.set(0.18,2.52,0.29);
+  grp.add(eyeR);
+  // Eye glow
+  const eg = sphere(0.06,6,6,glowColor,glowColor);
+  eg.position.set(-0.18,2.52,0.33); grp.add(eg);
+  const eg2 = sphere(0.06,6,6,glowColor,glowColor);
+  eg2.position.set(0.18,2.52,0.33); grp.add(eg2);
+  // Legs
+  const legL = box(0.25,0.8,0.25, bodyColor, glowColor);
+  legL.position.set(-0.25,0.4,0); grp.add(legL);
+  const legR = box(0.25,0.8,0.25, bodyColor, glowColor);
+  legR.position.set(0.25,0.4,0); grp.add(legR);
+  // Arms
+  if (hasArms) {
+    const armL = box(0.2,0.8,0.2, bodyColor, glowColor);
+    armL.position.set(-0.65,1.5,0); armL.rotation.z=0.3; grp.add(armL);
+    const armR = box(0.2,0.8,0.2, bodyColor, glowColor);
+    armR.position.set(0.65,1.5,0); armR.rotation.z=-0.3; grp.add(armR);
+  }
+  // Chest panel
+  const panel = box(0.5,0.5,0.05, glowColor, glowColor);
+  panel.material.transparent=true; panel.material.opacity=0.5;
+  panel.position.set(0,1.5,0.33);
+  grp.add(panel);
+  // Antenna
+  const ant = cylinder(0.03,0.03,0.5,6,glowColor,glowColor);
+  ant.position.set(0,3.0,0);
+  grp.add(ant);
+  const antTop = sphere(0.08,6,6,glowColor,glowColor);
+  antTop.position.set(0,3.3,0);
+  grp.add(antTop);
+  // Base platform
+  const base = cylinder(0.5,0.6,0.1,16,bodyColor,glowColor);
+  base.position.y=0;
+  grp.add(base);
+
+  return grp;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FLOOR 2: SYSTEMS
+// ══════════════════════════════════════════════════════════════
+function buildSysFloor() {
+  const OX=0, OZ=-20;
+
+  // Platform
+  const plat = box(30,0.5,20, 0x0f1829, 0x0a1220);
+  plat.position.set(OX,-0.25,OZ);
+  plat.receiveShadow=true;
+  addToFloor(plat,'sys');
+
+  // Grid
+  const g = makeGrid(0.02, 0x10b981);
+  g.position.set(OX,0,OZ);
+  addToFloor(g,'sys');
+
+  // Particles
+  const pts = particles(150,20,0x10b981,0);
+  pts.position.set(OX,0,OZ);
+  addToFloor(pts,'sys');
+
+  const pl = new THREE.PointLight(0x10b981,2,22);
+  pl.position.set(OX,10,OZ);
+  scene.add(pl); floorObjects.sys.push(pl);
+
+  // Buildings
+  const buildings = [
+    { id:'building_frontend', color:0x0ea5e9, h:5, pos:[-9,0,-3], label:'Frontend UI' },
+    { id:'building_backend',  color:0x10b981, h:8, pos:[-2,0,-3], label:'Backend API' },
+    { id:'building_db',       color:0xf97316, h:4, pos:[6, 0,-3], label:'Database' },
+    { id:null, color:0xa855f7, h:3, pos:[-6,0,2], label:'Cache' },
+    { id:null, color:0xfbbf24, h:6, pos:[2, 0,2], label:'Queue' }
+  ];
+
+  buildings.forEach(b => {
+    const grp = new THREE.Group();
+    const bW=2.5, bD=2.5;
+    // Main body
+    const body = box(bW,b.h,bD, b.color, b.color);
+    body.material.transparent=true; body.material.opacity=0.35;
+    body.position.y=b.h/2;
+    body.castShadow=true;
+    grp.add(body);
+    // Wireframe overlay
+    const wf = box(bW+0.05,b.h+0.05,bD+0.05, b.color, b.color);
+    wf.material.wireframe=true; wf.material.transparent=true; wf.material.opacity=0.5;
+    wf.position.y=b.h/2;
+    grp.add(wf);
+    // Roof light
+    const rl = sphere(0.3,8,8,b.color,b.color);
+    rl.position.y=b.h+0.3;
+    grp.add(rl);
+    // Windows
+    for(let row=0;row<Math.min(b.h-1,4);row++) {
+      for(let col=-1;col<=1;col+=2) {
+        const win = box(0.35,0.45,0.05,0xffffff,0xffffff);
+        win.material.transparent=true; win.material.opacity=0.6;
+        win.position.set(col*0.7,(row+1)*1.1,bD/2+0.03);
+        grp.add(win);
+      }
+    }
+
+    const absPos = [OX+b.pos[0], 0, OZ+b.pos[2]];
+    grp.position.set(...absPos);
+    if (b.id) {
+      grp.userData.id = b.id;
+      grp.traverse(c => { if(c.isMesh) { c.userData.id=b.id; interactable.push(c); } });
+    }
+    floorObjects.sys.push(grp);
+    scene.add(grp);
+  });
+
+  // Connection roads
+  const roads = [
+    { from:[-9,0], to:[-2,0] },
+    { from:[-2,0], to:[6,0] },
+    { from:[-9,0], to:[-6,2] },
+    { from:[-2,0], to:[2,2] }
+  ];
+  roads.forEach(r => {
+    const dx=r.to[0]-r.from[0], dz=r.to[1]-r.from[1];
+    const len=Math.sqrt(dx*dx+dz*dz);
+    const road=box(len,0.05,0.25,0x10b981,0x10b981);
+    road.material.transparent=true; road.material.opacity=0.4;
+    road.position.set(OX+(r.from[0]+r.to[0])/2, 0.03, OZ+(r.from[1]+r.to[1])/2);
+    road.rotation.y=Math.atan2(dz,dx);
+    addToFloor(road,'sys');
+  });
+
+  // Data packets
+  for(let i=0;i<4;i++) {
+    const pkt = sphere(0.12,6,6,0x10b981,0x10b981);
+    pkt.userData.packet=true;
+    pkt.userData.t=i/4;
+    pkt.position.set(OX-9+i*4,0.3,OZ-3);
+    addToFloor(pkt,'sys');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FLOOR 3: ALGORITHMS
+// ══════════════════════════════════════════════════════════════
+function buildAlgoFloor() {
+  const OX=18, OZ=0;
+
+  // Platform
+  const plat = box(22,0.5,18, 0x0f1829, 0x100a04);
+  plat.position.set(OX,-0.25,OZ);
+  plat.receiveShadow=true;
+  addToFloor(plat,'algo');
+
+  // Grid
+  const g = makeGrid(0.02, 0xf97316);
+  g.position.set(OX,0,OZ);
+  addToFloor(g,'algo');
+
+  const pts = particles(150,18,0xf97316,0);
+  pts.position.set(OX,0,OZ);
+  addToFloor(pts,'algo');
+
+  const pl = new THREE.PointLight(0xf97316,2,20);
+  pl.position.set(OX,8,OZ);
+  scene.add(pl); floorObjects.algo.push(pl);
+
+  // ── SORTING MACHINE
+  // Conveyor belt
+  for(let i=0;i<8;i++) {
+    const seg = box(1.5,0.12,1, 0x2a1a08, 0x1a0d02);
+    seg.position.set(OX-5+i*1.5, 0.06, OZ-4);
+    addToFloor(seg,'algo');
+  }
+  // Sorting bars (as 3D columns)
+  const sortBarData = [5,3,7,1,6,2,8,4];
+  sortBarData.forEach((v,i) => {
+    const bar = cylinder(0.25,0.25,v*0.4,8,0xf97316,0xf97316);
+    bar.position.set(OX-4+i*1.3, v*0.2, OZ-4);
+    bar.userData.id='algo_sort';
+    bar.userData.sortBar=true;
+    bar.userData.sortIdx=i;
+    interactable.push(bar);
+    addToFloor(bar,'algo');
+  });
+
+  // ── GRAPH CITY (nodes + edges)
+  const graphNodes = [
+    {id:'algo_graph',pos:[OX-5,0.3,OZ+3]},
+    {id:null,pos:[OX-2,0.3,OZ+1]},
+    {id:null,pos:[OX+1,0.3,OZ+4]},
+    {id:null,pos:[OX+3,0.3,OZ+1]},
+    {id:null,pos:[OX+5,0.3,OZ+3]},
+  ];
+  const gNodeMeshes = graphNodes.map((n,i) => {
+    const nm = sphere(0.3+Math.random()*0.15,10,10,0xfbbf24,0xfbbf24);
+    nm.position.set(...n.pos);
+    if(n.id){ nm.userData.id=n.id; interactable.push(nm); }
+    addToFloor(nm,'algo');
+    return nm;
+  });
+  // Edges
+  const edges=[[0,1],[1,2],[2,4],[1,3],[3,4],[0,3]];
+  edges.forEach(([a,b]) => {
+    const pa=new THREE.Vector3(...graphNodes[a].pos);
+    const pb=new THREE.Vector3(...graphNodes[b].pos);
+    const mid=pa.clone().add(pb).multiplyScalar(0.5);
+    const len=pa.distanceTo(pb);
+    const edge=cylinder(0.04,0.04,len,6,0xfbbf24,0xfbbf24);
+    edge.material.transparent=true; edge.material.opacity=0.5;
+    edge.position.copy(mid);
+    edge.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),pb.clone().sub(pa).normalize());
+    addToFloor(edge,'algo');
+  });
+
+  // ── DATA STRUCTURES
+  // Stack tower
+  for(let i=0;i<5;i++) {
+    const layer = box(1.2,0.35,1.2, i%2===0?0xf97316:0xef6c00, 0xf97316);
+    layer.position.set(OX+6,0.18+i*0.37,OZ-2);
+    layer.userData.id='algo_stack';
+    interactable.push(layer);
+    addToFloor(layer,'algo');
+  }
+  // Arrow indicator
+  const arrow = box(0.1,0.6,0.1,0xfbbf24,0xfbbf24);
+  arrow.position.set(OX+7.2,2.1,OZ-2);
+  addToFloor(arrow,'algo');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SORT BARS UI
+// ══════════════════════════════════════════════════════════════
+let sortArr = [60,35,80,15,70,25,90,45];
+function buildSortBars() {
+  const viz = document.getElementById('sort-viz');
+  viz.innerHTML='';
+  sortArr.forEach((v,i) => {
+    const b=document.createElement('div');
+    b.className='sort-bar';
+    b.style.height=(v*0.72)+'px';
+    b.style.background=`hsl(${30+i*8},90%,55%)`;
+    viz.appendChild(b);
+  });
+}
+function updateSortBars(arr, highlighted=[]) {
+  const bars=document.querySelectorAll('.sort-bar');
+  arr.forEach((v,i) => {
+    bars[i].style.height=(v*0.72)+'px';
+    bars[i].style.background=highlighted.includes(i)?'#38bdf8':`hsl(${30+i*8},90%,55%)`;
+  });
+}
+async function runSort(type) {
+  if(sortRunning) return;
+  sortRunning=true;
+  sortArr=[60,35,80,15,70,25,90,45];
+  buildSortBars();
+  const arr=[...sortArr];
+  const delay=ms=>new Promise(r=>setTimeout(r,ms));
+  if(type==='bubble') {
+    for(let i=0;i<arr.length-1;i++) {
+      for(let j=0;j<arr.length-1-i;j++) {
+        updateSortBars(arr,[j,j+1]);
+        await delay(120);
+        if(arr[j]>arr[j+1]){const t=arr[j];arr[j]=arr[j+1];arr[j+1]=t;}
+      }
+    }
+  } else if(type==='selection') {
+    for(let i=0;i<arr.length;i++) {
+      let mi=i;
+      for(let j=i+1;j<arr.length;j++){ updateSortBars(arr,[mi,j]); await delay(100); if(arr[j]<arr[mi])mi=j; }
+      const t=arr[i];arr[i]=arr[mi];arr[mi]=t;
+    }
+  } else {
+    // Quick sort animated
+    async function qsort(lo,hi) {
+      if(lo>=hi)return;
+      const pv=arr[hi];let pi=lo;
+      for(let i=lo;i<hi;i++){
+        updateSortBars(arr,[i,hi]); await delay(100);
+        if(arr[i]<pv){const t=arr[i];arr[i]=arr[pi];arr[pi]=t;pi++;}
+      }
+      const t=arr[pi];arr[pi]=arr[hi];arr[hi]=t;
+      await qsort(lo,pi-1); await qsort(pi+1,hi);
+    }
+    await qsort(0,arr.length-1);
+  }
+  updateSortBars(arr,[]);
+  sortArr=arr;
+  sortRunning=false;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SYSTEMS REQUEST ANIMATION
+// ══════════════════════════════════════════════════════════════
+async function animateRequest() {
+  if(reqRunning) return;
+  reqRunning=true;
+  const steps=['rs-client','rs-gateway','rs-service','rs-db','rs-resp'];
+  for(const s of steps) {
+    document.querySelectorAll('.req-step').forEach(el=>el.classList.remove('active'));
+    document.getElementById(s).classList.add('active');
+    await new Promise(r=>setTimeout(r,550));
+  }
+  await new Promise(r=>setTimeout(r,300));
+  document.querySelectorAll('.req-step').forEach(el=>el.classList.remove('active'));
+  reqRunning=false;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  OOP ANIMATION
+// ══════════════════════════════════════════════════════════════
+async function animateOOP() {
+  const nodes=['oopA','oopB','oopC','oopD'];
+  for(const n of nodes) {
+    document.querySelectorAll('.oop-node').forEach(el=>el.classList.remove('highlight'));
+    document.getElementById(n).classList.add('highlight');
+    await new Promise(r=>setTimeout(r,600));
+  }
+  await new Promise(r=>setTimeout(r,300));
+  document.querySelectorAll('.oop-node').forEach(el=>el.classList.remove('highlight'));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RAYCASTING / INTERACTION
+// ══════════════════════════════════════════════════════════════
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2(-999,-999);
+
+function onMouseMove(e) {
+  mouse.x = (e.clientX/window.innerWidth)*2-1;
+  mouse.y = -(e.clientY/window.innerHeight)*2+1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(interactable, false);
+  const tip = document.getElementById('tooltip');
+  const tipName = document.getElementById('tooltip-name');
+  const tipTag = document.getElementById('tooltip-tag');
+
+  if(hits.length && hits[0].object.userData.id) {
+    const id = hits[0].object.userData.id;
+    const data = KB[id];
+    document.getElementById('c').style.cursor='pointer';
+    tip.style.left=(e.clientX+16)+'px';
+    tip.style.top=(e.clientY-12)+'px';
+    tipTag.textContent = data ? data.eyebrow : 'INTERACTIVE NODE';
+    tipName.textContent = data ? data.title : id.replace(/_/g,' ').toUpperCase();
+    tip.classList.add('show');
+  } else {
+    document.getElementById('c').style.cursor='crosshair';
+    tip.classList.remove('show');
+  }
+}
+
+function onSceneClick(e) {
+  if(e.clientY < 56 || e.target !== document.getElementById('c')) return;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(interactable, false);
+  if(hits.length && hits[0].object.userData.id) {
+    const id = hits[0].object.userData.id;
+    openPanel(id);
+    gainXP(id);
+  }
+}
+
+function openPanel(id) {
+  const data = KB[id];
+  if(!data) return;
+  document.getElementById('panel-eyebrow').textContent = data.eyebrow;
+  document.getElementById('panel-title').textContent = data.title;
+  document.getElementById('panel-body').textContent = data[difficulty];
+  document.getElementById('panel-code').textContent = data.code;
+  // Tags
+  const tagsEl = document.getElementById('panel-tags');
+  tagsEl.innerHTML = '';
+  (data.tags||[]).forEach(t => {
+    const span=document.createElement('span');
+    span.className='panel-tag'; span.textContent=t;
+    tagsEl.appendChild(span);
+  });
+  document.getElementById('panel').classList.add('show');
+
+  // Auto-add message to chat
+  const msgs=document.getElementById('chat-msgs');
+  const msg=document.createElement('div');
+  msg.className='cmsg ai';
+  msg.textContent=`Analyzing [${id.toUpperCase()}] — ${data.tags?'Tags: '+data.tags.slice(0,2).join(', '):''} — Ask me to explain further!`;
+  msgs.appendChild(msg);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function closePanel() { document.getElementById('panel').classList.remove('show'); }
+
+// ══════════════════════════════════════════════════════════════
+//  XP SYSTEM
+// ══════════════════════════════════════════════════════════════
+function gainXP(id) {
+  if(seenNodes.has(id)) return;
+  seenNodes.add(id);
+  xp += 25;
+  const pct = Math.min((xp/300)*100, 100);
+  document.getElementById('xp-fill').style.width=pct+'%';
+  document.getElementById('xp-pts').textContent=xp;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function goFloor(floor) {
+  currentFloor = floor;
+  // Update cam target
+  const p = CAM_PRESETS[floor];
+  camState.tgt.x=p.x; camState.tgt.y=p.y; camState.tgt.z=p.z;
+
+  // Nav pills
+  document.querySelectorAll('.npill').forEach(n=>n.classList.remove('active','prog-active','sys-active','algo-active'));
+  const btnMap={lobby:'btn-lobby',prog:'btn-prog',sys:'btn-sys',algo:'btn-algo'};
+  const classMap={lobby:'active',prog:'prog-active',sys:'sys-active',algo:'algo-active'};
+  document.getElementById(btnMap[floor]).classList.add(classMap[floor]);
+
+  // Minimap
+  document.querySelectorAll('.mfloor').forEach(m=>m.classList.remove('active'));
+  document.getElementById('mm-'+floor).classList.add('active');
+
+  // Floor tag
+  const tagMap={lobby:'LOBBY HUB',prog:'F1 · PROGRAMMING LAB',sys:'F2 · SYSTEMS ARCH',algo:'F3 · ALGDAT ARENA'};
+  const tagColors={lobby:'var(--blue)',prog:'var(--blue)',sys:'var(--green)',algo:'var(--orange)'};
+  const ftag=document.getElementById('floor-tag');
+  ftag.textContent=tagMap[floor];
+  ftag.style.color=tagColors[floor];
+  ftag.style.borderColor=tagColors[floor].replace('var(','').replace(')','');
+
+  // Floor side UI panels
+  document.querySelectorAll('.floor-ui').forEach(el=>el.classList.remove('visible'));
+  if(floor!=='lobby') {
+    const fuiMap={prog:'fui-prog',sys:'fui-sys',algo:'fui-algo'};
+    document.getElementById(fuiMap[floor]).classList.add('visible');
+  }
+
+  closePanel();
+}
+
+function setDiff(el, mode) {
+  difficulty=mode;
+  document.querySelectorAll('.dbtn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const panel=document.getElementById('panel');
+  if(panel.classList.contains('show')) {
+    const title=document.getElementById('panel-title').textContent;
+    const key=Object.keys(KB).find(k=>KB[k].title===title);
+    if(key) openPanel(key);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CHATBOT — AI POWERED
+// ══════════════════════════════════════════════════════════════
+function toggleChat() {
+  chatOpen=!chatOpen;
+  document.getElementById('chatbot').classList.toggle('open',chatOpen);
+}
+
+async function sendChat() {
+  const input=document.getElementById('chat-input');
+  const query=input.value.trim();
+  if(!query) return;
+
+  const msgs=document.getElementById('chat-msgs');
+
+  // User bubble
+  const uMsg=document.createElement('div');
+  uMsg.className='cmsg user';
+  uMsg.textContent=query;
+  msgs.appendChild(uMsg);
+  input.value='';
+  msgs.scrollTop=msgs.scrollHeight;
+
+  // Typing indicator
+  const typing=document.createElement('div');
+  typing.className='cmsg typing';
+  typing.innerHTML='<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+  msgs.appendChild(typing);
+  msgs.scrollTop=msgs.scrollHeight;
+
+  document.getElementById('chat-send').disabled=true;
+
+  // Build context for AI
+  const floorCtx = {
+    lobby:'The user is in the Lobby Hub, viewing the main portal.',
+    prog:'The user is on Floor 1 — the Programming Lab with robot OOP demonstrations.',
+    sys:'The user is on Floor 2 — the Systems Architecture floor with a digital city.',
+    algo:'The user is on Floor 3 — the Algorithm Arena with sorting machines and graph nodes.'
+  };
+  const systemPrompt = `You are ARIA, an AI assistant inside CODEWORKS HQ — an immersive 3D educational world for computer science. 
+Current floor: ${floorCtx[currentFloor]}
+Current difficulty: ${difficulty}
+Your role: explain CS concepts clearly based on difficulty level. For beginner: use analogies and plain language. For intermediate: use technical terms. For advanced: discuss trade-offs, internals, and complexity.
+Keep answers concise (2-4 sentences). End with a suggestion to explore a related node in the 3D world if relevant.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        system: systemPrompt,
+        messages:[{ role:'user', content: query }]
+      })
+    });
+    const data = await response.json();
+    const aiText = data.content?.[0]?.text || 'Unable to connect to AI. Please try again.';
+
+    typing.remove();
+    const aiMsg=document.createElement('div');
+    aiMsg.className='cmsg ai';
+    aiMsg.textContent=aiText;
+    msgs.appendChild(aiMsg);
+  } catch(err) {
+    typing.remove();
+    const errMsg=document.createElement('div');
+    errMsg.className='cmsg ai';
+    errMsg.textContent='AI connection unavailable. Try clicking nodes in the 3D world for instant explanations.';
+    msgs.appendChild(errMsg);
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+  document.getElementById('chat-send').disabled=false;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ANIMATE LOOP
+// ══════════════════════════════════════════════════════════════
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // ── Camera lerp
+  const speed=0.07;
+  camState.cur.x += (camState.tgt.x - camState.cur.x)*speed;
+  camState.cur.y += (camState.tgt.y - camState.cur.y)*speed;
+  camState.cur.z += (camState.tgt.z - camState.cur.z)*speed;
+  camera.position.set(camState.cur.x, camState.cur.y, camState.cur.z);
+
+  // Look at floor center
+  const lookTargets={lobby:{x:0,y:2,z:0},prog:{x:-18,y:2,z:0},sys:{x:0,y:2,z:-20},algo:{x:18,y:2,z:0}};
+  const lt=lookTargets[currentFloor];
+  camera.lookAt(lt.x, lt.y, lt.z);
+
+  // ── Lobby animations
+  scene.children.forEach(obj => {
+    if(!obj.userData) return;
+    const id=obj.userData.id;
+    if(id==='hologram') { obj.rotation.y+=0.007; obj.rotation.x=Math.sin(t*0.5)*0.2; }
+    if(id==='portal_prog') { obj.rotation.z+=0.012; obj.position.y=1.8+Math.sin(t*1.3)*0.12; }
+    if(id==='portal_sys')  { obj.rotation.z-=0.010; obj.position.y=1.8+Math.sin(t*1.1+1)*0.12; }
+    if(id==='portal_algo') { obj.rotation.z+=0.014; obj.position.y=1.8+Math.sin(t*1.5+2)*0.12; }
+  });
+
+  // ── Prog floor robot bobbing
+  floorObjects.prog.forEach(obj => {
+    if(obj.isGroup && obj.userData.id && obj.userData.id.startsWith('robot')) {
+      obj.position.y=Math.sin(t*1.2+obj.userData.id.charCodeAt(6))*0.07;
+      obj.rotation.y=Math.sin(t*0.5+obj.userData.id.charCodeAt(6))*0.15;
+    }
+  });
+
+  // ── Sys floor packet animation
+  floorObjects.sys.forEach(obj => {
+    if(obj.userData&&obj.userData.packet) {
+      obj.userData.t = (obj.userData.t + 0.003) % 1;
+      const tx=obj.userData.t;
+      obj.position.x=-9+tx*18;
+      obj.position.y=0.3+Math.sin(tx*Math.PI*4)*0.15;
+    }
+  });
+
+  // ── Algo floor sort bars slight pulse
+  const phase=Math.sin(t*3)*0.05;
+  floorObjects.algo.forEach(obj => {
+    if(obj.userData&&obj.userData.sortBar) {
+      obj.material.emissiveIntensity=0.3+phase;
+    }
+  });
+
+  // ── Graph node pulse
+  floorObjects.algo.forEach(obj => {
+    if(obj.isMesh&&obj.userData&&obj.userData.id==='algo_graph') {
+      obj.scale.setScalar(1+Math.sin(t*2)*0.08);
+    }
+  });
+
+  renderer.render(scene, camera);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RESIZE
+// ══════════════════════════════════════════════════════════════
+function onResize() {
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
